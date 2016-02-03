@@ -1,0 +1,14 @@
+{
+  "name": "postcss-selectorcleanse",
+  "version": "0.0.1",
+  "description": "Removes CSS selectors based on which device it is meant to be used on",
+  "main": "index.js",
+  "scripts": {
+    "test": "cleanseselect"
+  },
+  "author": "tegner",
+  "license": "ISC",
+  "dependencies": {
+    "postcss": "^5.0.14"
+  }
+}
