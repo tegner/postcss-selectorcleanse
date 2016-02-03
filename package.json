@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "Removes CSS selectors based on which device it is meant to be used on",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tegner/postcss-selectorcleanse"
+  },
   "scripts": {
     "test": "cleanseselect"
   },
