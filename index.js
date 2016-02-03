@@ -18,6 +18,7 @@ module.exports = postcss.plugin('myplugin', function myplugin(options) {
     return function (css) {
 
         options = options || {};
+
         var removeables = selectormap[options.device].removeables;
         var convertibles = selectormap[options.device].convertibles;
 
@@ -37,7 +38,7 @@ module.exports = postcss.plugin('myplugin', function myplugin(options) {
                 for (var i = convertibles.length; i--;) {
 
                     if (rule.selector.indexOf(convertibles[i]) !== -1) {
-                        rule.selector = rule.selector.replace(convertibles[i], '');
+                        rule.selector = rule.selector.replace(convertibles[i] + ' ', '');
                     }
 
                 };
