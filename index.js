@@ -13,42 +13,63 @@ var selectormap = {
     },
 };
 
-module.exports = postcss.plugin('myplugin', function myplugin(options) {
+module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options) {
 
     return function (css) {
 
         options = options || {};
-
         var removeables = selectormap[options.device].removeables;
         var convertibles = selectormap[options.device].convertibles;
+
+        var selectorCount = [];
 
         // Processing code will be added here
 
         css.walkRules(function (rule) {
-            if (typeof removeables !== 'undefined') {
-                for (var i = removeables.length; i--;) {
 
-                    if (rule.selector.indexOf(removeables[i]) !== -1) {
-                        rule.remove();
-                    }
+            var selectors = rule.selector.split(','),
+                selectorsLength = selectors.length,
+                parsedSelectors = [];
 
+            for (var j = 0; j < selectorsLength; j++) {
+                selectorCount.push(selectors[j]);
+
+                var selectorLine = selectors[j];
+
+                if (typeof removeables !== 'undefined') {
+                    for (var i = 0; i < removeables.length; i++) {
+                        if (selectorLine.indexOf(`${removeables[i]} `) !== -1) {
+                            selectorLine = '';
+                        }
+                    };
                 };
-            }
-            if (typeof convertibles !== 'undefined') {
-                for (var i = convertibles.length; i--;) {
 
-                    if (rule.selector.indexOf(convertibles[i]) !== -1) {
-                        rule.selector = rule.selector.replace(convertibles[i] + ' ', '');
-                    }
-
+                if (typeof convertibles !== 'undefined') {
+                    for (var i = 0; i < convertibles.length; i++) {
+                        if (selectorLine.indexOf(convertibles[i]) !== -1) {
+                            selectorLine = selectorLine.replace(`${convertibles[i]} `, '');
+                        }
+                    };
                 };
-            }
 
-            if (rule.selector.indexOf(options.device) !== -1) {
-                rule.selector = rule.selector.replace('.' + options.device + ' ', '');
-            };
+                if (selectorLine.indexOf(options.device) !== -1) {
+                    selectorLine = selectorLine.replace(`.${options.device} `, '');
+                };
+
+                if (selectorLine !== '') {
+                    parsedSelectors.push(selectorLine);
+                };
+
+            }
+            if (parsedSelectors.length > 0) {
+                rule.selector = parsedSelectors.join(',');
+            } else {
+                rule.remove();
+            }
 
         });
+
+        console.log(`Your ${options.device} CSS uses ${selectorCount.length} selectors`);
 
     }
 
