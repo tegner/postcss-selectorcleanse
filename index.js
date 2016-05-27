@@ -1,6 +1,14 @@
+"use strict";
+
+/**
+* Require dependencies
+*/
 var postcss = require('postcss');
 
-var selectormap = {
+/**
+* Set default selectors
+*/
+var defaultselectors = {
     desktop     : {
         removeables: ['.smartphone', '.tablet'],
     },
@@ -13,11 +21,15 @@ var selectormap = {
     },
 };
 
-module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options) {
+module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(seletors, options) {
 
     return function (css) {
 
         options = options || {};
+
+        var seletormap = Object.assign(seletors, defaultselectors);
+
+        var keepers = selectormap[options.device].keepers;
         var removeables = selectormap[options.device].removeables;
         var convertibles = selectormap[options.device].convertibles;
 
@@ -61,6 +73,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
                 };
 
             }
+
             if (parsedSelectors.length > 0) {
                 rule.selector = parsedSelectors.join(',');
             } else {
