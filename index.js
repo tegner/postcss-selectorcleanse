@@ -9,33 +9,77 @@ var postcss = require('postcss');
 * Set default selectors
 */
 var defaultselectors = {
-    desktop     : {
-        removeables: ['.smartphone', '.tablet'],
-    },
-    smartphone  : {
-        removeables: ['.desktop', '.tablet', ':hover'],
-    },
-    tablet      : {
-        removeables: ['.smartphone', ':hover'],
-        convertibles: ['.desktop'],
-    },
+    desktop     : [
+        {
+            selector: '.desktop',
+            type: 'keep'
+        },
+        {
+            selector: '.smartphone',
+            type: 'remove'
+        },
+        {
+            selector: '.tablet',
+            type: 'remove'
+        },
+    ],
+    smartphone  : [
+        {
+            selector: '.smartphone',
+            type: 'keep'
+        },
+        {
+            selector: '.desktop',
+            type: 'remove'
+        },
+        {
+            selector: '.tablet',
+            type: 'remove'
+        },
+        {
+            selector: ':hover',
+            type: 'remove'
+        },
+    ],
+    tablet      : [
+        {
+            selector: '.tablet',
+            type: 'keep'
+        },
+        {
+            selector: '.smartphone',
+            type: 'remove'
+        },
+        {
+            selector: ':hover',
+            type: 'remove'
+        },
+        {
+            selector: '.desktop',
+            type: 'convert'
+        },
+    ]
 };
 
-module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(seletors, options) {
+module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options) {
 
     return function (css) {
 
         options = options || {};
+        options.selectors = options.selectors || {};
 
-        var seletormap = Object.assign(seletors, defaultselectors);
+        var selectormap = Object.assign({}, options.selectors, defaultselectors);
 
-        var keepers = selectormap[options.device].keepers;
-        var removeables = selectormap[options.device].removeables;
-        var convertibles = selectormap[options.device].convertibles;
+        if (typeof options.cleanser !== 'undefined') {
+            var editableSelectors = selectormap[options.cleanser];
+        } else {
+            for (var key in options.selectors) {
+                var editableSelectors = options.selectors[key];
+                break;
+            }
+        }
 
-        var selectorCount = [];
-
-        // Processing code will be added here
+        var selectorCount = [], allSelectors = [];
 
         css.walkRules(function (rule) {
 
@@ -44,35 +88,35 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(sele
                 parsedSelectors = [];
 
             for (var j = 0; j < selectorsLength; j++) {
-                selectorCount.push(selectors[j]);
 
                 var selectorLine = selectors[j];
 
-                if (typeof removeables !== 'undefined') {
-                    for (var i = 0; i < removeables.length; i++) {
-                        if (selectorLine.indexOf(`${removeables[i]} `) !== -1) {
+                allSelectors.push(selectorLine);
+
+                for (var i = 0; i < editableSelectors.length; i++) {
+                    var sel = editableSelectors[i].selector,
+                        type = editableSelectors[i].type;
+
+                    if (selectorLine.indexOf(`${sel} `) !== -1) {
+
+                        if (type === 'remove') {
                             selectorLine = '';
+                        } else if (type === 'convert') {
+                            selectorLine = selectorLine.replace(`${sel} `, '');
+                        } else if (type === 'keep') {
+                            selectorLine = selectorLine.replace(`${sel} `, '');
                         }
-                    };
-                };
 
-                if (typeof convertibles !== 'undefined') {
-                    for (var i = 0; i < convertibles.length; i++) {
-                        if (selectorLine.indexOf(convertibles[i]) !== -1) {
-                            selectorLine = selectorLine.replace(`${convertibles[i]} `, '');
-                        }
-                    };
-                };
+                    }
 
-                if (selectorLine.indexOf(options.device) !== -1) {
-                    selectorLine = selectorLine.replace(`.${options.device} `, '');
-                };
-
-                if (selectorLine !== '') {
-                    parsedSelectors.push(selectorLine);
-                };
+                }
 
             }
+
+            if (selectorLine !== '') {
+                parsedSelectors.push(selectorLine);
+                selectorCount.push(selectorLine);
+            };
 
             if (parsedSelectors.length > 0) {
                 rule.selector = parsedSelectors.join(',');
@@ -82,7 +126,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(sele
 
         });
 
-        console.log(`Your ${options.device} CSS uses ${selectorCount.length} selectors`);
+        console.log(`Your ${options.cleanser} CSS uses ${selectorCount.length} selectors, from a total of ${allSelectors.length}`);
 
     }
 
