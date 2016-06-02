@@ -61,12 +61,88 @@ var defaultselectors = {
     ]
 };
 
+function removeSpecifics(selectorsInFile, editableSelectors) {
+
+    var selectorsInFileLength = selectorsInFile.length,
+        parsedSelectors = [];
+
+    for (var j = 0; j < selectorsInFileLength; j++) {
+
+        var selectorLine = selectorsInFile[j];
+
+        for (var i = 0; i < editableSelectors.length; i++) {
+
+            var sel = editableSelectors[i].selector,
+                type = editableSelectors[i].type;
+
+            if (selectorLine.indexOf(`${sel}`) !== -1) {
+
+                if (type === 'remove') {
+                    selectorLine = '';
+                } else if (type === 'convert') {
+                    selectorLine = selectorLine.replace(`${sel} `, '');
+                } else if (type === 'keep') {
+                    selectorLine = selectorLine.replace(`${sel} `, '');
+                }
+
+            }
+
+        }
+
+        if (selectorLine !== '') {
+            parsedSelectors.push(selectorLine);
+        };
+
+    }
+    return parsedSelectors;
+}
+
+function keepSpecifics(selectorsInFile, editableSelectors) {
+
+    var selectorsInFileLength = selectorsInFile.length,
+        parsedSelectors = [];
+
+    for (var i = 0; i < editableSelectors.length; i++) {
+
+        var sel = editableSelectors[i];
+
+        if (Object.prototype.toString.call(sel) === '[object Object]') {
+            sel = sel.selector;
+        }
+        if (selectorsInFile.join('').indexOf(sel) !== -1) {
+
+            for (var j = 0; j < selectorsInFileLength; j++) {
+
+                var selectorLine = selectorsInFile[j];
+                var re = /[:.\s]/;
+                var reduced = selectorLine.split(`${sel}`),
+                    redux = reduced.join(''),
+                    matched = re.exec(redux);
+
+                if (reduced.length !== 1) {
+
+                    if (redux === '' || (matched !== null && matched.index === 0)) {
+                        parsedSelectors.push(selectorLine);
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+    return parsedSelectors;
+
+}
+
 module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options) {
 
     return function (css) {
 
         options = options || {};
         options.selectors = options.selectors || {};
+        options.subset = options.subset || false;
 
         var selectormap = Object.assign({}, options.selectors, defaultselectors);
 
@@ -79,46 +155,33 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
             }
         }
 
-        var selectorCount = [], allSelectors = [];
+        var selectorCount = 0, allSelectors = 0;
 
         css.walkRules(function (rule) {
 
-            var selectors = rule.selector.split(','),
-                selectorsLength = selectors.length,
+            var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm,'').split(','),
+                selectorsInFileLength = selectorsInFile.length,
                 parsedSelectors = [];
 
-            for (var j = 0; j < selectorsLength; j++) {
-
-                var selectorLine = selectors[j];
-
-                allSelectors.push(selectorLine);
-
-                for (var i = 0; i < editableSelectors.length; i++) {
-                    var sel = editableSelectors[i].selector,
-                        type = editableSelectors[i].type;
-
-                    if (selectorLine.indexOf(`${sel} `) !== -1) {
-
-                        if (type === 'remove') {
-                            selectorLine = '';
-                        } else if (type === 'convert') {
-                            selectorLine = selectorLine.replace(`${sel} `, '');
-                        } else if (type === 'keep') {
-                            selectorLine = selectorLine.replace(`${sel} `, '');
-                        }
-
-                    }
-
-                }
-
+            /**
+             * At the moment we skip atrules such as @keyframes & @font-face
+             */
+            if (rule.parent.type === 'atrule' && rule.parent.name !== 'media') {
+                return;
             }
 
-            if (selectorLine !== '') {
-                parsedSelectors.push(selectorLine);
-                selectorCount.push(selectorLine);
-            };
+            if (options.subset === true) {
+                parsedSelectors = keepSpecifics(selectorsInFile, editableSelectors);
+            }
+
+            if (options.subset === false) {
+                parsedSelectors = removeSpecifics(selectorsInFile, editableSelectors);
+            }
+
+            allSelectors = allSelectors + selectorsInFileLength;
 
             if (parsedSelectors.length > 0) {
+                selectorCount = selectorCount + parsedSelectors.length;
                 rule.selector = parsedSelectors.join(',');
             } else {
                 rule.remove();
@@ -126,7 +189,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
 
         });
 
-        console.log(`Your ${options.cleanser} CSS uses ${selectorCount.length} selectors, from a total of ${allSelectors.length}`);
+        console.log(`Your ${options.cleanser} CSS uses ${selectorCount} selectors, from a total of ${allSelectors}`);
 
     }
 
