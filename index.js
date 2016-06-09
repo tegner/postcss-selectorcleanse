@@ -68,12 +68,12 @@ function removeSpecifics(selectorsInFile, editableSelectors) {
 
     for (let i = 0; i < selectorsInFileLength; i++) {
 
-        var selectorLine = selectorsInFile[j];
+        var selectorLine = selectorsInFile[i];
 
         for (let j = 0; j < editableSelectors.length; j++) {
 
-            var sel = editableSelectors[i].selector,
-                type = editableSelectors[i].type;
+            var sel = editableSelectors[j].selector,
+                type = editableSelectors[j].type;
 
             if (selectorLine.indexOf(`${sel}`) !== -1) {
 
