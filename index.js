@@ -66,11 +66,11 @@ function removeSpecifics(selectorsInFile, editableSelectors) {
     var selectorsInFileLength = selectorsInFile.length,
         parsedSelectors = [];
 
-    for (var j = 0; j < selectorsInFileLength; j++) {
+    for (let i = 0; i < selectorsInFileLength; i++) {
 
         var selectorLine = selectorsInFile[j];
 
-        for (var i = 0; i < editableSelectors.length; i++) {
+        for (let j = 0; j < editableSelectors.length; j++) {
 
             var sel = editableSelectors[i].selector,
                 type = editableSelectors[i].type;
@@ -102,26 +102,27 @@ function keepSpecifics(selectorsInFile, editableSelectors) {
     var selectorsInFileLength = selectorsInFile.length,
         parsedSelectors = [];
 
-    for (var i = 0; i < editableSelectors.length; i++) {
+    for (let i = 0; i < editableSelectors.length; i++) {
 
         var sel = editableSelectors[i];
 
         if (Object.prototype.toString.call(sel) === '[object Object]') {
             sel = sel.selector;
         }
-        if (selectorsInFile.join('').indexOf(sel) !== -1) {
+        var curIndexInSelector = selectorsInFile.join('').indexOf(sel);
+        if (curIndexInSelector !== -1) {
 
-            for (var j = 0; j < selectorsInFileLength; j++) {
+            for (let j = 0; j < selectorsInFileLength; j++) {
 
-                var selectorLine = selectorsInFile[j];
-                var re = /[:.\s]/;
-                var reduced = selectorLine.split(`${sel}`),
+                var selectorLine = selectorsInFile[j].trim(),
+                    re = /[:.\s]/,
+                    reduced = selectorLine.split(`${sel}`),
                     redux = reduced.join(''),
                     matched = re.exec(redux);
 
                 if (reduced.length !== 1) {
 
-                    if (redux === '' || (matched !== null && matched.index === 0)) {
+                    if (redux === '' || (matched !== null && matched.index === curIndexInSelector)) {
                         parsedSelectors.push(selectorLine);
                     }
 
@@ -149,13 +150,25 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
         if (typeof options.cleanser !== 'undefined') {
             var editableSelectors = selectormap[options.cleanser];
         } else {
-            for (var key in options.selectors) {
+            for (let key in options.selectors) {
                 var editableSelectors = options.selectors[key];
                 break;
             }
         }
 
-        var selectorCount = 0, allSelectors = 0;
+        var selectorCount = 0, allSelectors = 0, regKeyframes = [], keptKeyframes = [];
+
+        /** TODO : add media query cleaner
+        css.walkAtRules("media", function(atrule) {
+            if (atrule.params.replace(/\s/g, '') === "(max-width:767px)") {
+                atrule.walkRules(function(rule) {
+                    rule.selector = `.smartphone ${rule.selector}`;
+                    rule.remove();
+                    css.insertBefore(atrule, rule);
+                });
+            }
+            atrule.remove();
+        });*/
 
         css.walkRules(function (rule) {
 
@@ -167,6 +180,9 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
              * At the moment we skip atrules such as @keyframes & @font-face
              */
             if (rule.parent.type === 'atrule' && rule.parent.name !== 'media') {
+                if (rule.parent.name.indexOf('keyframes') !== -1 && regKeyframes.indexOf(rule.parent.params) === -1) {
+                    regKeyframes.push(rule.parent.params);
+                }
                 return;
             }
 
@@ -189,7 +205,27 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
 
         });
 
-        console.log(`Your ${options.cleanser} CSS uses ${selectorCount} selectors, from a total of ${allSelectors}`);
+        css.walkDecls('animation', function (decl) {
+            var declValue = decl.value;
+            for (let i = regKeyframes.length; i--;) {
+                if (declValue.indexOf(regKeyframes[i]) !== -1) {
+                    keptKeyframes.push(regKeyframes[i]);
+                }
+            }
+        });
+
+        for (let i = regKeyframes.length; i--;) {
+            let curKeyframe = regKeyframes[i];
+            if (keptKeyframes.indexOf(curKeyframe) === -1) {
+                css.walkAtRules("keyframes", function(rule) {
+                    if (rule.params === curKeyframe) {
+                        rule.remove();
+                    }
+                });
+            }
+        }
+
+        console.log(`Your CSS uses ${selectorCount} selectors, from a total of ${allSelectors}`);
 
     }
 
