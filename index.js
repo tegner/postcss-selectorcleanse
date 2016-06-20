@@ -60,7 +60,10 @@ var defaultselectors = {
         },
     ]
 };
-
+/**
+ * removeSpecifics
+ *
+ */
 function removeSpecifics(selectorsInFile, editableSelectors) {
 
     var selectorsInFileLength = selectorsInFile.length,
@@ -97,6 +100,12 @@ function removeSpecifics(selectorsInFile, editableSelectors) {
     return parsedSelectors;
 }
 
+/**
+ * keepSpecifics
+ * will remove anything but the specified classes from the options selectors
+ * if class has parent, the parent needs to be specified, if the nested is to be keptKeyframes
+ * TODO : remove classes with children or extensions, unless they are also specified
+ */
 function keepSpecifics(selectorsInFile, editableSelectors) {
 
     var selectorsInFileLength = selectorsInFile.length,
@@ -110,19 +119,20 @@ function keepSpecifics(selectorsInFile, editableSelectors) {
             sel = sel.selector;
         }
         var curIndexInSelector = selectorsInFile.join('').indexOf(sel);
+
         if (curIndexInSelector !== -1) {
 
             for (let j = 0; j < selectorsInFileLength; j++) {
 
                 var selectorLine = selectorsInFile[j].trim(),
+                    singleSelectorIndex = selectorLine.indexOf(sel),
                     re = /[:.\s]/,
                     reduced = selectorLine.split(`${sel}`),
                     redux = reduced.join(''),
                     matched = re.exec(redux);
 
                 if (reduced.length !== 1) {
-
-                    if (redux === '' || (matched !== null && matched.index === curIndexInSelector)) {
+                    if (redux === '' || (matched !== null && matched.index === singleSelectorIndex)) {
                         parsedSelectors.push(selectorLine);
                     }
 
@@ -144,7 +154,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
         options = options || {};
         options.selectors = options.selectors || {};
         options.subset = options.subset || false;
-
         var selectormap = Object.assign({}, options.selectors, defaultselectors);
 
         if (typeof options.cleanser !== 'undefined') {
@@ -169,7 +178,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
             }
             atrule.remove();
         });*/
-
         css.walkRules(function (rule) {
 
             var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm,'').split(','),
@@ -213,6 +221,18 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
                 }
             }
         });
+
+        if (options.atrules === false) {
+          css.walkAtRules(function(ar) {
+            ar.remove();
+          });
+        }
+
+        if (options.atrules === false) {
+          css.walkComments(function(comment) {
+            comment.remove();
+          });
+        }
 
         for (let i = regKeyframes.length; i--;) {
             let curKeyframe = regKeyframes[i];
