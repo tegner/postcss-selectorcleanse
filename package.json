@@ -2,17 +2,20 @@
   "name": "postcss-selectorcleanse",
   "version": "0.0.8",
   "description": "Removes CSS selectors based on which device it is meant to be used on",
+  "scripts": {
+    "lint": "standard index.js"
+  },
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/tegner/postcss-selectorcleanse"
   },
-  "scripts": {
-    "test": "cleanseselect"
-  },
   "author": "tegner",
   "license": "ISC",
   "dependencies": {
     "postcss": "^5.0.14"
+  },
+  "devDependencies": {
+    "standard": "^7.1.2"
   }
 }
