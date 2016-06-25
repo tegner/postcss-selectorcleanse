@@ -2,6 +2,10 @@
 
 Clean up of CSS selectors. It is adviced to run this before cssnano.
 
+```npm
+npm install postcss-selectorcleanse 
+```
+
 ## Remove specified selectors/rules
 
 - default behaviour
@@ -17,27 +21,29 @@ Comes with three preset options.
 Will remove the nesting .desktop classes
 
 input example
+```css
   .element {
     width:120px;
   }
   .desktop .element {
     width:360px;
   }
-
+```
 output example
+```css
   .element {
     width:120px;
   }
   .element {
     width:360px;
   }
-
+```
 In this plugin we remove the .desktop "prefix"
 
 ### usage
 
 Parse
-
+```js
   require('postcss-selectorcleanse')({      
       cleanser: 'smartphone'
   })
@@ -51,7 +57,7 @@ Parse
           ]
       }
   }),
-
+```
 ## Keep specified selectors/rules
 
 if subset is set to true, we will only keep the specified css classes, these can be specified as an array or as objects in an array
@@ -60,7 +66,7 @@ if an options object is parsed without a cleanser specified, the first selectors
 ### usage
 
 array
-
+```js
   require('postcss-selectorcleanse')({
     subset: true,
     selectors: {
@@ -70,9 +76,9 @@ array
       ]    
     }
   })
-
+```
 object
-
+```js
   require('postcss-selectorcleanse')({
     subset: true,
     selectors: {
@@ -82,6 +88,6 @@ object
       ]
     }
   })
+```
 
-
-# TODO
+## TODO
