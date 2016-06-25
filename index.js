@@ -222,15 +222,9 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
             }
         });
 
-        if (options.atrules === false) {
+        if (options.removeAtrules === false) {
           css.walkAtRules(function(ar) {
             ar.remove();
-          });
-        }
-
-        if (options.atrules === false) {
-          css.walkComments(function(comment) {
-            comment.remove();
           });
         }
 
