@@ -3,7 +3,8 @@
   "version": "0.0.8",
   "description": "Removes CSS selectors based on which device it is meant to be used on",
   "scripts": {
-    "lint": "standard index.js"
+    "lint": "standard index.js",
+    "test": "standard"
   },
   "main": "index.js",
   "repository": {
@@ -17,5 +18,8 @@
   },
   "devDependencies": {
     "standard": "^7.1.2"
+  },
+  "eslint": {
+    "extends": "standard"
   }
 }
