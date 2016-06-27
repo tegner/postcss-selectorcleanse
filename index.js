@@ -9,22 +9,22 @@ var postcss = require('postcss')
 * Set default selectors
 */
 var defaults = {
-  "desktop": {
-    "selectors": {
-      "keep": [ ".desktop" ],
-      "remove": [ ".smartphone", ".tablet" ]
+  'desktop': {
+    'selectors': {
+      'keep': [ '.desktop' ],
+      'remove': [ '.smartphone', '.tablet' ]
     }
   },
-  "smartphone": {
-    "selectors": {
-      "keep": [ ".smartphone" ],
-      "remove": [".desktop", ".tablet", ":hover"]
+  'smartphone': {
+    'selectors': {
+      'keep': [ '.smartphone' ],
+      'remove': ['.desktop', '.tablet', ':hover']
     }
   },
-  "tablet": {
-    "selectors": {
-      "keep": [ ".desktop", ".tablet" ],
-      "remove": [".smartphone", ":hover"]
+  'tablet': {
+    'selectors': {
+      'keep': [ '.desktop', '.tablet' ],
+      'remove': ['.smartphone', ':hover']
     }
   }
 }
@@ -44,37 +44,6 @@ function matchValueInObjectArray (arr, matchValue) {
     }
   }
   return valueMatched
-}
-
-/**
-* removeSpecifics
-*
-*/
-function removeSpecifics (selectorsInFile, editableSelectors) {
-  var selectorsInFileLength = selectorsInFile.length
-  var parsedSelectors = []
-
-  for (let i = 0; i < selectorsInFileLength; i++) {
-    var selectorLine = selectorsInFile[i]
-
-    for (let j = 0; j < editableSelectors.length; j++) {
-      var sel = editableSelectors[j].selector
-      var type = editableSelectors[j].type
-      if (selectorLine.indexOf(`${sel}`) !== -1) {
-        if (type === 'remove') {
-          selectorLine = ''
-        } else if (type === 'convert') {
-          selectorLine = selectorLine.replace(`${sel} `, '')
-        } else if (type === 'keep') {
-          selectorLine = selectorLine.replace(`${sel} `, '')
-        }
-      }
-    }
-    if (selectorLine !== '') {
-      parsedSelectors.push(selectorLine)
-    }
-  }
-  return parsedSelectors
 }
 
 /**
@@ -129,8 +98,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
 
     var allSelectors = 0
     var selectorCount = 0
-    var regKeyframes = []
-    var keptKeyframes = []
 
     if (options.allowedMediaQuries.length !== 0 || options.translateMediaQuries.length !== 0) {
       css.walkAtRules('media', function (atrule) {
@@ -159,7 +126,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
           var selectorToRemove = selRem[i]
           var rgex = new RegExp(selectorToRemove, 'gi')
           css.walkRules(rgex, function (rule) {
-
             var cleanselector = []
             var selArr = rule.selector.split(/,\n/gi)
             for (let j = selArr.length; j--;) {
@@ -177,7 +143,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
             if (cleanselector.length > 0) {
               rule.selector = cleanselector.join(',')
             } else {
-              rule.remove();
+              rule.remove()
             }
           })
         }
@@ -185,25 +151,24 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
       if (options.selectors.keep !== undefined) {
         var selKeep = options.selectors.keep
         css.walkRules(function (rule) {
-            if (rule.parent.name === undefined) {
-              var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm, '').split(',')
+          if (rule.parent.name === undefined) {
+            var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm, '').split(',')
 
-              allSelectors = allSelectors + selectorsInFile.length
+            allSelectors = allSelectors + selectorsInFile.length
 
-              var parsedSelectors = keepSpecifics(selectorsInFile, selKeep)
+            var parsedSelectors = keepSpecifics(selectorsInFile, selKeep)
 
-              if (parsedSelectors.length > 0) {
-                selectorCount = selectorCount + parsedSelectors.length
-                rule.selector = parsedSelectors.join(',')
-              } else {
-                rule.remove()
-              }
+            if (parsedSelectors.length > 0) {
+              selectorCount = selectorCount + parsedSelectors.length
+              rule.selector = parsedSelectors.join(',')
+            } else {
+              rule.remove()
             }
+          }
         })
       }
     }
 
-    var keyframesPreserved = []
     css.walkAtRules('keyframes', function (kfRule) {
       var thisIsAKeeper = false
       css.walkDecls('animation', function (decl) {
@@ -224,6 +189,5 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
     }
 
     console.log(`Your CSS uses ${selectorCount} selectors, from a total of ${allSelectors}`)
-
   }
 })
