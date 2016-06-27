@@ -136,7 +136,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
       css.walkAtRules('media', function (atrule) {
         if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
           atrule.remove()
-          if (options.testrun) console.warn(`WARNING! Your media query ${atrule.params} was removed from the CSS!`)
+          console.warn(`WARNING! Your media query ${atrule.params} was removed from the CSS!`)
         }
 
         let returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params)
@@ -147,7 +147,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
             css.insertBefore(atrule, rule)
           })
           atrule.remove()
-          if (options.testrun) console.log(`Your media query ${atrule.params} was translated to ${returnedObject.selector}`)
+          console.log(`Your media query ${atrule.params} was translated to ${returnedObject.selector}`)
         }
       })
     }
@@ -159,6 +159,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
           var selectorToRemove = selRem[i]
           var rgex = new RegExp(selectorToRemove, 'gi')
           css.walkRules(rgex, function (rule) {
+
             var cleanselector = []
             var selArr = rule.selector.split(/,\n/gi)
             for (let j = selArr.length; j--;) {
@@ -184,19 +185,20 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
       if (options.selectors.keep !== undefined) {
         var selKeep = options.selectors.keep
         css.walkRules(function (rule) {
+            if (rule.parent.name === undefined) {
+              var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm, '').split(',')
 
-          var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm, '').split(',')
+              allSelectors = allSelectors + selectorsInFile.length
 
-          allSelectors = allSelectors + selectorsInFile.length
+              var parsedSelectors = keepSpecifics(selectorsInFile, selKeep)
 
-          var parsedSelectors = keepSpecifics(selectorsInFile, selKeep)
-
-          if (parsedSelectors.length > 0) {
-            selectorCount = selectorCount + parsedSelectors.length
-            rule.selector = parsedSelectors.join(',')
-          } else {
-            rule.remove()
-          }
+              if (parsedSelectors.length > 0) {
+                selectorCount = selectorCount + parsedSelectors.length
+                rule.selector = parsedSelectors.join(',')
+              } else {
+                rule.remove()
+              }
+            }
         })
       }
     }
