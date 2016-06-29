@@ -11,27 +11,26 @@ var postcss = require('postcss')
 var defaults = {
   'desktop': {
     'selectors': {
-      'keep': [ '.desktop' ],
+      'convert': [ '.desktop' ],
       'remove': [ '.smartphone', '.tablet' ]
     }
   },
   'smartphone': {
     'selectors': {
-      'keep': [ '.smartphone' ],
-      'remove': ['.desktop', '.tablet', ':hover']
+      'convert': [ '.smartphone' ],
+      'remove': [ '.desktop', '.tablet', ':hover' ]
     }
   },
   'tablet': {
     'selectors': {
-      'keep': [ '.desktop', '.tablet' ],
-      'remove': ['.smartphone', ':hover']
+      'convert': [ '.desktop', '.tablet' ],
+      'remove': [ '.smartphone', ':hover' ]
     }
   }
 }
 
 /**
 * matchValueInObject
-*
 */
 function matchValueInObjectArray (arr, matchValue) {
   let valueMatched
@@ -47,41 +46,56 @@ function matchValueInObjectArray (arr, matchValue) {
 }
 
 /**
-* keepSpecifics
-* will remove anything but the specified classes from the options selectors
-* if class has parent, the parent needs to be specified, if the nested is to be keptKeyframes
-* TODO : remove classes with children or extensions, unless they are also specified
+* createSubset
 */
-function keepSpecifics (selectorsInFile, editableSelectors) {
-  var selectorsInFileLength = selectorsInFile.length
-  var parsedSelectors = []
-
-  for (let i = 0; i < editableSelectors.length; i++) {
-    var sel = editableSelectors[i]
-
-    if (Object.prototype.toString.call(sel) === '[object Object]') {
-      sel = sel.selector
+function createSubset (selectorsInFile, regex) {
+  let cleanselector = []
+  let selectorsInFileArr = selectorsInFile.split(',')
+  for (let i = 0; i < selectorsInFileArr.length; i++) {
+    let selector = selectorsInFileArr[i]
+    let result = regex.exec(selector)
+    let pushvalue = ''
+    if (result !== null) {
+      pushvalue = selector.replace(result[0], '').trim()
     }
-    var curIndexInSelector = selectorsInFile.join('').indexOf(sel)
-
-    if (curIndexInSelector !== -1) {
-      for (let j = 0; j < selectorsInFileLength; j++) {
-        var selectorLine = selectorsInFile[j].trim()
-        var singleSelectorIndex = selectorLine.indexOf(sel)
-        var re = /[:.\s]/
-        var reduced = selectorLine.split(`${sel}`)
-        var redux = reduced.join('')
-        var matched = re.exec(redux)
-
-        if (reduced.length !== 1) {
-          if (redux === '' || (matched !== null && matched.index === singleSelectorIndex)) {
-            parsedSelectors.push(matched.input)
-          }
-        }
-      }
+    if (pushvalue !== '') {
+      cleanselector.push(pushvalue)
     }
   }
-  return parsedSelectors
+  return cleanselector.join(',')
+}
+
+/**
+* convertSelector
+*/
+function convertSelector (selectorsInFile, regex) {
+  let cleanselector = []
+  let selectorsInFileArr = selectorsInFile.split(',')
+  for (let i = 0; i < selectorsInFileArr.length; i++) {
+    let selector = selectorsInFileArr[i]
+    let result = regex.exec(selector)
+    if (result !== null) {
+      selector = selector.replace(result[0], '').trim()
+    }
+    cleanselector.push(selector)
+  }
+  return cleanselector.join(',')
+}
+
+/**
+* removeSelector
+*/
+function removeSelector (selectorsInFile, regex) {
+  let cleanselector = []
+  let selectorsInFileArr = selectorsInFile.split(',')
+  for (let i = 0; i < selectorsInFileArr.length; i++) {
+    let selector = selectorsInFileArr[i]
+    let result = regex.exec(selector)
+    if (result === null) {
+      cleanselector.push(selector)
+    }
+  }
+  return cleanselector.join(',')
 }
 
 module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (options) {
@@ -91,19 +105,18 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
     options.allowedMediaQuries = options.allowedMediaQuries || []
     options.translateMediaQuries = options.translateMediaQuries || []
     options.selectors = options.selectors || {}
-
+    options.log = true
     if (options.cleanser !== undefined) {
       options.selectors = defaults[options.cleanser].selectors
     }
 
-    var allSelectors = 0
-    var selectorCount = 0
-
     if (options.allowedMediaQuries.length !== 0 || options.translateMediaQuries.length !== 0) {
+      let removedAtRules = []
+      let translatedAtRules = []
       css.walkAtRules('media', function (atrule) {
         if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
           atrule.remove()
-          console.warn(`WARNING! Your media query ${atrule.params} was removed from the CSS!`)
+          removedAtRules.push(atrule.params)
         }
 
         let returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params)
@@ -114,70 +127,64 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
             css.insertBefore(atrule, rule)
           })
           atrule.remove()
-          console.log(`Your media query ${atrule.params} was translated to ${returnedObject.selector}`)
+          translatedAtRules.push(atrule.params)
         }
       })
     }
 
     if (options.selectors !== undefined) {
-      if (options.selectors.remove !== undefined) {
-        var selRem = options.selectors.remove
-        for (let i = selRem.length; i--;) {
-          var selectorToRemove = selRem[i]
-          var rgex = new RegExp(selectorToRemove, 'gi')
-          css.walkRules(rgex, function (rule) {
-            var cleanselector = []
-            var selArr = rule.selector.split(/,\n/gi)
-            for (let j = selArr.length; j--;) {
-              var curSelArr = selArr[j]
-              var shouldRemove = (selArr[j].indexOf(selectorToRemove) !== -1)
-              if (shouldRemove === false) {
-                for (let k = selRem.length; k--;) {
-                  shouldRemove = (curSelArr.indexOf(selRem[k]) !== -1)
-                }
-              }
-              if (shouldRemove === false) {
-                cleanselector.push(curSelArr)
-              }
-            }
-            if (cleanselector.length > 0) {
-              rule.selector = cleanselector.join(',')
-            } else {
-              rule.remove()
-            }
-          })
-        }
-      }
-      if (options.selectors.keep !== undefined) {
-        var selKeep = options.selectors.keep
-        css.walkRules(function (rule) {
+      if (options.selectors.only !== undefined) {
+        let selectorsToKeep = options.selectors.only
+        let keepRegexString = selectorsToKeep.join('|')
+        let keepRegexWalk = new RegExp('^(?!\\' + keepRegexString + ')')
+        let keepRegex = new RegExp('\\' + keepRegexString)
+        css.walkRules(keepRegexWalk, function (rule) {
           if (rule.parent.name === undefined) {
-            var selectorsInFile = rule.selector.replace(/(\r\n|\n|\r)/gm, '').split(',')
-
-            allSelectors = allSelectors + selectorsInFile.length
-
-            var parsedSelectors = keepSpecifics(selectorsInFile, selKeep)
-
-            if (parsedSelectors.length > 0) {
-              selectorCount = selectorCount + parsedSelectors.length
-              rule.selector = parsedSelectors.join(',')
+            let newSelector = createSubset(rule.selector, keepRegex)
+            if (newSelector !== '') {
+              rule.selector = newSelector
             } else {
               rule.remove()
             }
           }
         })
       }
+      if (options.selectors.convert !== undefined) {
+        let convertedSelectors = []
+        let selectorsToConvert = options.selectors.convert
+        let convertRegexString = selectorsToConvert.join('|')
+        let convertRegex = new RegExp('\\' + convertRegexString)
+        css.walkRules(convertRegex, function (rule) {
+          rule.selector = convertSelector(rule.selector, convertRegex)
+          convertedSelectors.push(rule.selector)
+        })
+      }
+      if (options.selectors.remove !== undefined) {
+        let removedSelectors = []
+        let selectorsToRemove = options.selectors.remove
+        let removeRegexString = selectorsToRemove.join('|')
+        let removeRegex = new RegExp('\\' + removeRegexString)
+        css.walkRules(removeRegex, function (rule) {
+          let newSelector = removeSelector(rule.selector, removeRegex)
+          removedSelectors.push(rule.selector)
+          if (newSelector !== '') {
+            rule.selector = newSelector
+          } else {
+            rule.remove()
+          }
+        })
+      }
     }
 
     css.walkAtRules('keyframes', function (kfRule) {
-      var thisIsAKeeper = false
+      let keepKeyframe = false
       css.walkDecls('animation', function (decl) {
-        var declValue = decl.value
+        let declValue = decl.value
         if (declValue.indexOf(kfRule.params) !== -1) {
-          thisIsAKeeper = true
+          keepKeyframe = true
         }
       })
-      if (thisIsAKeeper === false) {
+      if (keepKeyframe === false) {
         kfRule.remove()
       }
     })
@@ -187,7 +194,5 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
         comment.remove()
       })
     }
-
-    console.log(`Your CSS uses ${selectorCount} selectors, from a total of ${allSelectors}`)
   }
 })
