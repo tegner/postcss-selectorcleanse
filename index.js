@@ -12,20 +12,52 @@ var defaults = {
   'desktop': {
     'selectors': {
       'convert': [ '.desktop' ],
-      'remove': [ '.smartphone', '.tablet' ]
-    }
+      'remove': [ '.smartphone', '.tablet', '.critical' ]
+    },
+    'allowedMediaQuries': [
+      '(--desktop)'
+    ],
+    'translateMediaQuries': [
+      {
+        'query': '(--desktop)',
+        'selector': '.desktop'
+      }
+    ]
   },
   'smartphone': {
     'selectors': {
       'convert': [ '.smartphone' ],
-      'remove': [ '.desktop', '.tablet', ':hover' ]
-    }
+      'remove': [ '.desktop', '.tablet', ':hover', '.critical' ]
+    },
+    'allowedMediaQuries': [
+      '(--smartphone)'
+    ],
+    'translateMediaQuries': [
+      {
+        'query': '(--smartphone)',
+        'selector': '.smartphone'
+      }
+    ]
   },
   'tablet': {
     'selectors': {
       'convert': [ '.desktop', '.tablet' ],
-      'remove': [ '.smartphone', ':hover' ]
-    }
+      'remove': [ '.smartphone', ':hover', '.critical' ]
+    },
+    'allowedMediaQuries': [
+      '(--desktop)',
+      '(--tablet)'
+    ],
+    'translateMediaQuries': [
+      {
+        'query': '(--desktop)',
+        'selector': '.desktop'
+      },
+      {
+        'query': '(--tablet)',
+        'selector': '.tablet'
+      }
+    ]
   }
 }
 
@@ -52,11 +84,14 @@ function createSubset (selectorsInFile, regex) {
   let cleanselector = []
   let selectorsInFileArr = selectorsInFile.split(',')
   for (let i = 0; i < selectorsInFileArr.length; i++) {
-    let selector = selectorsInFileArr[i]
+    let selector = selectorsInFileArr[i].replace(/\n|\r/gi, '')
     let result = regex.exec(selector)
     let pushvalue = ''
     if (result !== null) {
-      pushvalue = selector.replace(result[0], '').trim()
+      let checkresult = (selector.indexOf(result[0] + ' ') !== -1 || selector === result[0])
+      if (checkresult) {
+        pushvalue = selector
+      }
     }
     if (pushvalue !== '') {
       cleanselector.push(pushvalue)
@@ -107,27 +142,24 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
     options.selectors = options.selectors || {}
     options.log = true
     if (options.cleanser !== undefined) {
-      options.selectors = defaults[options.cleanser].selectors
+      options = defaults[options.cleanser]
     }
 
     if (options.allowedMediaQuries.length !== 0 || options.translateMediaQuries.length !== 0) {
-      let removedAtRules = []
-      let translatedAtRules = []
       css.walkAtRules('media', function (atrule) {
         if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
           atrule.remove()
-          removedAtRules.push(atrule.params)
         }
 
         let returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params)
         if (returnedObject !== undefined) {
           atrule.walkRules(function (rule) {
+            console.log(rule.selector)
             rule.selector = `${returnedObject.selector} ${rule.selector}`
             rule.remove()
             css.insertBefore(atrule, rule)
           })
           atrule.remove()
-          translatedAtRules.push(atrule.params)
         }
       })
     }
@@ -135,12 +167,25 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
     if (options.selectors !== undefined) {
       if (options.selectors.only !== undefined) {
         let selectorsToKeep = options.selectors.only
-        let keepRegexString = selectorsToKeep.join('|')
-        let keepRegexWalk = new RegExp('^(?!\\' + keepRegexString + ')')
-        let keepRegex = new RegExp('\\' + keepRegexString)
-        css.walkRules(keepRegexWalk, function (rule) {
+        let onlyRegexString = selectorsToKeep.join('|')
+        let onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')')
+        let onlyRegex = new RegExp('\\' + onlyRegexString)
+
+        // css.walkRules(function (rule) {
+        //   if (rule.parent.name === undefined) {
+        //     console.log('running')
+        //     let newSelector = createSubset(rule.selector, onlyRegex)
+        //     if (newSelector !== '') {
+        //       rule.selector = newSelector
+        //     } else {
+        //       rule.remove()
+        //     }
+        //   }
+        // })
+
+        css.walkRules(onlyRegexWalk, function (rule) {
           if (rule.parent.name === undefined) {
-            let newSelector = createSubset(rule.selector, keepRegex)
+            let newSelector = createSubset(rule.selector, onlyRegex)
             if (newSelector !== '') {
               rule.selector = newSelector
             } else {
@@ -150,23 +195,25 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
         })
       }
       if (options.selectors.convert !== undefined) {
-        let convertedSelectors = []
         let selectorsToConvert = options.selectors.convert
         let convertRegexString = selectorsToConvert.join('|')
         let convertRegex = new RegExp('\\' + convertRegexString)
         css.walkRules(convertRegex, function (rule) {
           rule.selector = convertSelector(rule.selector, convertRegex)
-          convertedSelectors.push(rule.selector)
+          let newSelector = convertSelector(rule.selector, convertRegex)
+          if (newSelector !== '') {
+            rule.selector = newSelector
+          } else {
+            rule.remove()
+          }
         })
       }
       if (options.selectors.remove !== undefined) {
-        let removedSelectors = []
         let selectorsToRemove = options.selectors.remove
         let removeRegexString = selectorsToRemove.join('|')
         let removeRegex = new RegExp('\\' + removeRegexString)
         css.walkRules(removeRegex, function (rule) {
           let newSelector = removeSelector(rule.selector, removeRegex)
-          removedSelectors.push(rule.selector)
           if (newSelector !== '') {
             rule.selector = newSelector
           } else {
@@ -175,19 +222,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
         })
       }
     }
-
-    css.walkAtRules('keyframes', function (kfRule) {
-      let keepKeyframe = false
-      css.walkDecls('animation', function (decl) {
-        let declValue = decl.value
-        if (declValue.indexOf(kfRule.params) !== -1) {
-          keepKeyframe = true
-        }
-      })
-      if (keepKeyframe === false) {
-        kfRule.remove()
-      }
-    })
 
     if (options.removeComments === true) {
       css.walkComments(function (comment) {
