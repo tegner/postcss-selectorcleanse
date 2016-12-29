@@ -51,7 +51,7 @@ var defaults = {
     'translateMediaQuries': [
       {
         'query': '(--desktop)',
-        'selector': '.desktop'
+        'selector': '.tablet'
       },
       {
         'query': '(--tablet)',
@@ -154,7 +154,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
         let returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params)
         if (returnedObject !== undefined) {
           atrule.walkRules(function (rule) {
-            console.log(rule.selector)
             rule.selector = `${returnedObject.selector} ${rule.selector}`
             rule.remove()
             css.insertBefore(atrule, rule)
@@ -170,18 +169,6 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
         let onlyRegexString = selectorsToKeep.join('|')
         let onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')')
         let onlyRegex = new RegExp('\\' + onlyRegexString)
-
-        // css.walkRules(function (rule) {
-        //   if (rule.parent.name === undefined) {
-        //     console.log('running')
-        //     let newSelector = createSubset(rule.selector, onlyRegex)
-        //     if (newSelector !== '') {
-        //       rule.selector = newSelector
-        //     } else {
-        //       rule.remove()
-        //     }
-        //   }
-        // })
 
         css.walkRules(onlyRegexWalk, function (rule) {
           if (rule.parent.name === undefined) {
