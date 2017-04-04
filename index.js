@@ -136,7 +136,6 @@ function removeSelector (selectorsInFile, regex) {
 module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (options) {
   return function (css) {
     options = options || {}
-
     options.allowedMediaQuries = options.allowedMediaQuries || []
     options.translateMediaQuries = options.translateMediaQuries || []
     options.selectors = options.selectors || {}
@@ -166,10 +165,9 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
     if (options.selectors !== undefined) {
       if (options.selectors.only !== undefined) {
         let selectorsToKeep = options.selectors.only
-        let onlyRegexString = selectorsToKeep.join('|')
+        let onlyRegexString = selectorsToKeep.join('|\\') + '|\\:root'
         let onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')')
         let onlyRegex = new RegExp('\\' + onlyRegexString)
-
         css.walkRules(onlyRegexWalk, function (rule) {
           if (rule.parent.name === undefined) {
             let newSelector = createSubset(rule.selector, onlyRegex)
@@ -183,7 +181,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
       }
       if (options.selectors.convert !== undefined) {
         let selectorsToConvert = options.selectors.convert
-        let convertRegexString = selectorsToConvert.join('|')
+        let convertRegexString = selectorsToConvert.join('|\\')
         let convertRegex = new RegExp('\\' + convertRegexString)
         css.walkRules(convertRegex, function (rule) {
           rule.selector = convertSelector(rule.selector, convertRegex)
@@ -197,7 +195,7 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse (opt
       }
       if (options.selectors.remove !== undefined) {
         let selectorsToRemove = options.selectors.remove
-        let removeRegexString = selectorsToRemove.join('|')
+        let removeRegexString = selectorsToRemove.join('|\\')
         let removeRegex = new RegExp('\\' + removeRegexString)
         css.walkRules(removeRegex, function (rule) {
           let newSelector = removeSelector(rule.selector, removeRegex)

@@ -1,0 +1,13 @@
+@custom-media --smartphone (width <= 767px);
+@custom-media --desktop (width >= 767px);
+@custom-media --widedesktop (width >= 940px);
+
+:root {
+  --content-var: 'ATF';
+  --keep-vars: 10px;
+}
+
+.only-for-atf {
+  content: var(--content-var);
+  height: 0;
+}
