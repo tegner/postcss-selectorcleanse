@@ -1,0 +1,54 @@
+@custom-media --smartphone (width <= 767px);
+@custom-media --desktop (width >= 767px);
+@custom-media --widedesktop (width >= 940px);
+
+:root {
+  --content-var: 'ATF';
+  --keep-vars: 10px;
+}
+
+:root {
+    --content-var: 'DESKTOP & TABLET';
+    --keep-vars: 150px;
+  }
+
+@media (--widedesktop) {
+
+  :root {
+    --content-var: 'desktop, not tablet';
+    --keep-vars: 750px;
+  }
+}
+
+.btn-close--disclaimer {
+  height: 44px;
+  line-height: 44px;
+  width: 44px;
+  width: 145px;
+}
+
+.another-atf {
+  height: var(--keep-vars);
+}
+
+.another-desktop {
+  height: var(--keep-vars);
+}
+
+.another-smartphone {
+  height: var(--keep-vars);
+}
+
+.another-tablet {
+  height: var(--keep-vars);
+}
+
+.only-for-atf {
+  content: var(--content-var);
+  height: 0;
+}
+
+.only-for-desktop {
+  content: var(--content-var);
+  height: 100px;
+}

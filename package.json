@@ -1,10 +1,15 @@
 {
   "name": "postcss-selectorcleanse",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Removes CSS selectors based on which device it is meant to be used on",
   "scripts": {
     "lint": "standard index.js",
-    "test": "standard"
+    "test": "jest",
+    "dryrun": "npm run atf && npm run desktop && npm run smartphone && npm run tablet",
+    "atf": "node dryrun.js --env atf",
+    "desktop": "node dryrun.js --env desktop",
+    "smartphone": "node dryrun.js --env smartphone",
+    "tablet": "node dryrun.js --env tablet"
   },
   "main": "index.js",
   "repository": {
@@ -14,9 +19,12 @@
   "author": "tegner",
   "license": "ISC",
   "dependencies": {
-    "postcss": "^5.2.8"
+    "postcss": "^5.2.16"
   },
   "devDependencies": {
+    "jest": "^19.0.2",
+    "postcss-cli": "^3.0.0",
+    "postcss-load-config": "^1.2.0",
     "standard": "^8.6.0"
   },
   "eslint": {
