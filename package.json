@@ -1,6 +1,6 @@
 {
   "name": "postcss-selectorcleanse",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description":
     "Removes CSS selectors based on which device it is meant to be used on",
   "scripts": {
