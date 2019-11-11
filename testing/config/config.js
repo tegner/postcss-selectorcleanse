@@ -2,30 +2,13 @@ const { readFileSync } = require('fs');
 
 function pluginOptions(env) {
   switch (env) {
-    case 'atf':
-      return {
-        removeComments: true,
-        selectors: {
-          only: ['.critical', '.atf'],
-          convert: ['.critical', '.atf'],
-          remove: ['.desktop', '.tablet']
-        },
-        allowedMediaQuries: ['(--critical)'],
-        translateMediaQuries: [
-          {
-            query: '(--critical)',
-            selector: '.critical'
-          }
-        ]
-      };
-      break;
     case 'desktop':
       return {
+        bannedMediaQuries: ['(--smartphone)', '(--tablet)'],
         selectors: {
           convert: ['.desktop', '.critical', '.atf'],
           remove: ['.smartphone', '.tablet']
         },
-        allowedMediaQuries: ['(--desktop)', '(--widedesktop)'],
         translateMediaQuries: [
           {
             query: '(--desktop)',
@@ -33,20 +16,13 @@ function pluginOptions(env) {
           }
         ]
       };
-      break;
     case 'smartphone':
       return {
+        bannedMediaQuries: ['(--desktop)', '(--tablet)', '(--widedesktop)'],
         selectors: {
           convert: ['.smartphone'],
-          remove: [
-            '.desktop',
-            '.tablet',
-            '.critical',
-            '.sec-rightcolumn',
-            ':hover'
-          ]
+          remove: ['.desktop', '.tablet', '.critical', '.sec-rightcolumn', ':hover']
         },
-        allowedMediaQuries: ['(--smartphone)'],
         translateMediaQuries: [
           {
             query: '(--smartphone)',
@@ -54,40 +30,21 @@ function pluginOptions(env) {
           }
         ]
       };
-      break;
     case 'tablet':
       return {
+        bannedMediaQuries: ['(--smartphone)', '(--widedesktop)'],
         selectors: {
           convert: ['.tablet', '.critical', '.atf'],
           remove: ['.desktop', '.smartphone', ':hover']
         },
-        allowedMediaQuries: ['(--landscape)', '(--portrait)', '(--desktop)'],
         translateMediaQuries: [
           {
             query: '(--desktop)',
             selector: '.tablet'
-          }
-        ]
-      };
-      break;
-    default:
-      return {
-        selectors: {
-          convert: ['.smartphone'],
-          remove: [
-            '.desktop',
-            '.tablet',
-            '.atf',
-            '.critical',
-            '.sec-rightcolumn',
-            ':hover'
-          ]
-        },
-        allowedMediaQuries: ['(--smartphone)'],
-        translateMediaQuries: [
+          },
           {
-            query: '(--smartphone)',
-            selector: '.smartphone'
+            query: '(--tablet)',
+            selector: '.tablet'
           }
         ]
       };

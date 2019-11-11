@@ -1,42 +1,38 @@
-'use strict'
+'use strict';
 
-const { readFileSync } = require('fs')
+const { readFileSync } = require('fs');
+const { exec } = require('child_process');
 
-var postcss = require('postcss')
-var plugin = require('./')
-var configFunc = require('./testing/config/config.js')
+const postcss = require('postcss');
+const plugin = require('./');
+const configFunc = require('./testing/config/config.js');
+console.log('configFunc', configFunc);
+const run = (input, output, opts) => {
+  return postcss([plugin(opts)])
+    .process(input)
+    .then(result => {
+      expect(result.css).toEqual(output);
+      expect(result.warnings().length).toBe(0);
+    });
+};
 
-function run (input, output, opts) {
-  return postcss([ plugin(opts) ]).process(input)
-      .then(result => {
-        expect(result.css).toEqual(output)
-        expect(result.warnings().length).toBe(0)
-      })
-}
-
-var input = readFileSync('testing/input_css/input.css', 'utf8')
+const input = readFileSync('testing/input_css/input.css', 'utf8');
 
 /* Write tests here */
 it('tests smartphone output', () => {
-  var config = configFunc('smartphone')
+  const config = configFunc('smartphone');
 
-  return run(input, config.output, config.options)
-})
-
-it('tests atf output', () => {
-  var config = configFunc('atf')
-
-  return run(input, config.output, config.options)
-})
+  return run(input, config.output, config.options);
+});
 
 it('tests desktop output', () => {
-  var config = configFunc('desktop')
+  const config = configFunc('desktop');
 
-  return run(input, config.output, config.options)
-})
+  return run(input, config.output, config.options);
+});
 
 it('tests tablet output', () => {
-  var config = configFunc('tablet')
+  const config = configFunc('tablet');
 
-  return run(input, config.output, config.options)
-})
+  return run(input, config.output, config.options);
+});

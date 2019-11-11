@@ -3,14 +3,28 @@
 @custom-media --widedesktop (width >= 940px);
 
 :root {
-  --content-var: 'ATF';
-  --keep-vars: 10px;
-}
-
-:root {
-    --content-var: 'DESKTOP & TABLET';
+    --content-var: "DESKTOP & TABLET";
     --keep-vars: 150px;
   }
+
+.more-than-one-selector .in-media {
+    content: "DESKTOP & TABLET";
+  }
+
+:root {
+    --content-var: "TABLET";
+    --keep-vars: 50px;
+  }
+
+.more-than-one-selector .in-media {
+    content: "TABLET";
+  }
+
+@media (max-width: 1100px) {
+  .should-always-be-in-file {
+    display: none;
+  }
+}
 
 .btn-close--disclaimer {
   height: 44px;
@@ -19,25 +33,25 @@
   width: 145px;
 }
 
-.another-atf {
-  height: var(--keep-vars);
-}
-
 .another-desktop {
+  /**
+  * Should be in all outputs
+  */
   height: var(--keep-vars);
 }
 
 .another-smartphone {
+  /**
+  * Should be in all outputs
+  */
   height: var(--keep-vars);
 }
 
 .another-tablet {
+  /**
+  * Should be in all outputs
+  */
   height: var(--keep-vars);
-}
-
-.only-for-atf {
-  content: var(--content-var);
-  height: 0;
 }
 
 .only-for-tablet {

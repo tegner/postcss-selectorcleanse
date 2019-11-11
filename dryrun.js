@@ -1,26 +1,29 @@
-'use strict'
+'use strict';
 
-const { readFileSync } = require('fs')
+const { readFileSync, writeFileSync } = require('fs');
 
-var postcss = require('postcss')
+const postcss = require('postcss');
 
-var input = readFileSync('testing/input_css/input.css', 'utf8')
-var plugin = require('./')
+const input = readFileSync('testing/input_css/input.css', 'utf8');
 
-var env = process.argv[3] || 'smartphone'
-var configFunc = require('./testing/config/config.js')
-var config = configFunc(env)
+const plugin = require('./');
 
-function run (input, output, opts) {
-  return postcss([ plugin(opts) ]).process(input)
-      .then(result => {
-        console.log('******************************* wanted output **********************************')
-        console.log(output)
-        console.log('*********************************** result **********************************')
-        console.log(result.css)
-        console.log('*********************************** match? **********************************')
-        console.log(result.css === output)
-      })
+const env = process.argv[3] || 'smartphone';
+const configFunc = require('./testing/config/config.js');
+const config = configFunc(env);
+
+function run(input, output, opts) {
+  return postcss([plugin(opts)])
+    .process(input)
+    .then(result => {
+      // console.log('******************************* wanted output **********************************')
+      // console.log(output)
+      // console.log('*********************************** result **********************************')
+      console.log(result.css);
+      console.log('******************************** match? *******************************');
+      console.log(result.css === output);
+      writeFileSync(`./testing/output_css/${env}-output.test.css`, result.css);
+    });
 }
 
-run(input, config.output, config.options)
+run(input, config.output, config.options);
