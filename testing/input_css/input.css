@@ -2,32 +2,49 @@
 @custom-media --desktop (width >= 767px);
 @custom-media --widedesktop (width >= 940px);
 
-:root {
-  --content-var: 'ATF';
-  --keep-vars: 10px;
-}
-
 @media (--desktop) {
-
   :root {
-    --content-var: 'DESKTOP & TABLET';
+    --content-var: "DESKTOP & TABLET";
     --keep-vars: 150px;
+  }
+  .more-than-one-selector .in-media {
+    content: "DESKTOP & TABLET";
   }
 }
 
 @media (--smartphone) {
-
   :root {
-    --content-var: 'SMARTPHONE';
+    --content-var: "SMARTPHONE";
     --keep-vars: 50px;
+  }
+  .more-than-one-selector .in-media {
+    content: "SMARTPHONE";
+  }
+}
+
+@media (--tablet) {
+  :root {
+    --content-var: "TABLET";
+    --keep-vars: 50px;
+  }
+  .more-than-one-selector .in-media {
+    content: "TABLET";
   }
 }
 
 @media (--widedesktop) {
-
   :root {
-    --content-var: 'desktop, not tablet';
+    --content-var: "desktop, not tablet";
     --keep-vars: 750px;
+  }
+  .more-than-one-selector .in-media {
+    content: "only desktop";
+  }
+}
+
+@media (max-width: 1100px) {
+  .should-always-be-in-file {
+    display: none;
   }
 }
 
@@ -38,25 +55,25 @@
   width: 145px;
 }
 
-.another-atf {
-  height: var(--keep-vars);
-}
-
 .another-desktop {
+  /**
+  * Should be in all outputs
+  */
   height: var(--keep-vars);
 }
 
 .another-smartphone {
+  /**
+  * Should be in all outputs
+  */
   height: var(--keep-vars);
 }
 
 .another-tablet {
+  /**
+  * Should be in all outputs
+  */
   height: var(--keep-vars);
-}
-
-.critical .only-for-atf {
-  content: var(--content-var);
-  height: 0;
 }
 
 .desktop .only-for-desktop {

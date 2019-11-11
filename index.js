@@ -120,20 +120,25 @@ var removeSelector = function (selectorsInFile, regex) {
 module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options) {
     return function (css) {
         options = options || {};
-        options.allowedMediaQuries = options.allowedMediaQuries || [];
-        options.bannedMediaQuries = options.bannedMediaQuries || [];
-        options.translateMediaQuries = options.translateMediaQuries || [];
+        options.allowedMediaQuries = options.allowedMediaQuries;
+        options.bannedMediaQuries = options.bannedMediaQuries;
+        options.translateMediaQuries = options.translateMediaQuries;
         options.selectors = options.selectors || {};
         options.log = true;
         if (options.cleanser) {
             options = defaults[options.cleanser];
         }
-        if (options.allowedMediaQuries.length !== 0 || options.translateMediaQuries.length !== 0) {
+        if (options.allowedMediaQuries || options.bannedMediaQuries || options.translateMediaQuries) {
+            /**
+             * Handle banned first
+             */
             css.walkAtRules('media', function (atrule) {
                 if (options.bannedMediaQuries.indexOf(atrule.params) !== -1) {
                     atrule.remove();
                 }
-                if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
+            });
+            css.walkAtRules('media', function (atrule) {
+                if (options.allowedMediaQuries && options.allowedMediaQuries.indexOf(atrule.params) === -1) {
                     atrule.remove();
                 }
                 var returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params);

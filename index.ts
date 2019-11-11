@@ -17,8 +17,8 @@ interface ISelectorCleanseOptions {
   cleanser?: string;
   log?: boolean;
   removeComments?: boolean;
-  translateMediaQuries?: IQueryTranslator[];
   selectors?: ISelectorsOptions;
+  translateMediaQuries?: IQueryTranslator[];
 }
 
 interface ISelectorCleanseDefaults {
@@ -147,30 +147,35 @@ const removeSelector = (selectorsInFile: string, regex: RegExp) => {
 };
 
 module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options: ISelectorCleanseOptions) {
-  return function(css) {
+  return css => {
     options = options || {};
-    options.allowedMediaQuries = options.allowedMediaQuries || [];
-    options.bannedMediaQuries = options.bannedMediaQuries || [];
-    options.translateMediaQuries = options.translateMediaQuries || [];
+    options.allowedMediaQuries = options.allowedMediaQuries;
+    options.bannedMediaQuries = options.bannedMediaQuries;
+    options.translateMediaQuries = options.translateMediaQuries;
     options.selectors = options.selectors || {};
     options.log = true;
     if (options.cleanser) {
       options = defaults[options.cleanser];
     }
 
-    if (options.allowedMediaQuries.length !== 0 || options.translateMediaQuries.length !== 0) {
+    if (options.allowedMediaQuries || options.bannedMediaQuries || options.translateMediaQuries) {
+      /**
+       * Handle banned first
+       */
       css.walkAtRules('media', (atrule: postcss.AtRule) => {
         if (options.bannedMediaQuries.indexOf(atrule.params) !== -1) {
           atrule.remove();
         }
+      });
 
-        if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
+      css.walkAtRules('media', (atrule: postcss.AtRule) => {
+        if (options.allowedMediaQuries && options.allowedMediaQuries.indexOf(atrule.params) === -1) {
           atrule.remove();
         }
 
-        let returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params);
+        const returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params);
         if (returnedObject) {
-          atrule.walkRules(function(rule) {
+          atrule.walkRules(rule => {
             rule.selector = `${returnedObject.selector} ${rule.selector}`;
             rule.remove();
             css.insertBefore(atrule, rule);
@@ -182,13 +187,13 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
 
     if (options.selectors) {
       if (options.selectors.only) {
-        let selectorsToKeep = options.selectors.only;
-        let onlyRegexString = selectorsToKeep.join('|\\') + '|\\:root';
-        let onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')');
-        let onlyRegex = new RegExp('\\' + onlyRegexString);
+        const selectorsToKeep = options.selectors.only;
+        const onlyRegexString = selectorsToKeep.join('|\\') + '|\\:root';
+        const onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')');
+        const onlyRegex = new RegExp('\\' + onlyRegexString);
         css.walkRules(onlyRegexWalk, (rule: postcss.Rule) => {
           if (!(rule.parent as postcss.AtRule).name) {
-            let newSelector = createSubset(rule.selector, onlyRegex);
+            const newSelector = createSubset(rule.selector, onlyRegex);
             if (newSelector !== '') {
               rule.selector = newSelector;
             } else {
@@ -199,12 +204,12 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
       }
 
       if (options.selectors.convert) {
-        let selectorsToConvert = options.selectors.convert;
-        let convertRegexString = selectorsToConvert.join('|\\');
-        let convertRegex = new RegExp('\\' + convertRegexString);
+        const selectorsToConvert = options.selectors.convert;
+        const convertRegexString = selectorsToConvert.join('|\\');
+        const convertRegex = new RegExp('\\' + convertRegexString);
         css.walkRules(convertRegex, (rule: postcss.Rule) => {
           rule.selector = convertSelector(rule.selector, convertRegex);
-          let newSelector = convertSelector(rule.selector, convertRegex);
+          const newSelector = convertSelector(rule.selector, convertRegex);
           if (newSelector !== '') {
             rule.selector = newSelector;
           } else {
@@ -213,11 +218,11 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
         });
       }
       if (options.selectors.remove) {
-        let selectorsToRemove = options.selectors.remove;
-        let removeRegexString = selectorsToRemove.join('|\\');
-        let removeRegex = new RegExp('\\' + removeRegexString);
+        const selectorsToRemove = options.selectors.remove;
+        const removeRegexString = selectorsToRemove.join('|\\');
+        const removeRegex = new RegExp('\\' + removeRegexString);
         css.walkRules(removeRegex, (rule: postcss.Rule) => {
-          let newSelector = removeSelector(rule.selector, removeRegex);
+          const newSelector = removeSelector(rule.selector, removeRegex);
           if (newSelector !== '') {
             rule.selector = newSelector;
           } else {
