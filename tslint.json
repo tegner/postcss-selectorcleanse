@@ -1,0 +1,23 @@
+{
+  "defaultSeverity": "error",
+  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "rules": {
+    "interface-name": [false, "always-prefix"],
+    "member-ordering": [
+      true,
+      {
+        "order": "statics-first",
+        "alphabetize": true
+      }
+    ],
+    "no-angle-bracket-type-assertion": false,
+    "no-bitwise": false,
+    "no-console": [false, "log", "error"],
+    "no-unused-expression": [true, "allow-fast-null-checks", "allow-new"],
+    "prefer-for-of": false,
+    "variable-name": {
+      "options": ["ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"]
+    }
+  },
+  "rulesDirectory": []
+}
