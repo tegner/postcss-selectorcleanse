@@ -1,219 +1,204 @@
-'use strict';
-
-/**
- * Require dependencies
- */
-var postcss = require('postcss');
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var postcss = require("postcss");
 /**
  * Set default selectors
  */
 var defaults = {
-  desktop: {
-    selectors: {
-      convert: ['.desktop'],
-      remove: ['.smartphone', '.tablet', '.critical']
+    desktop: {
+        bannedMediaQuries: ['(--smartphone)', '(--tablet)'],
+        selectors: {
+            convert: ['.desktop'],
+            remove: ['.smartphone', '.tablet', '.critical']
+        },
+        translateMediaQuries: [
+            {
+                query: '(--desktop)',
+                selector: '.desktop'
+            }
+        ]
     },
-    allowedMediaQuries: ['(--desktop)'],
-    translateMediaQuries: [
-      {
-        query: '(--desktop)',
-        selector: '.desktop'
-      }
-    ]
-  },
-  smartphone: {
-    selectors: {
-      convert: ['.smartphone'],
-      remove: ['.desktop', '.tablet', ':hover', '.critical']
+    smartphone: {
+        bannedMediaQuries: ['(--desktop)', '(--tablet)'],
+        selectors: {
+            convert: ['.smartphone'],
+            remove: ['.desktop', '.tablet', ':hover', '.critical']
+        },
+        translateMediaQuries: [
+            {
+                query: '(--smartphone)',
+                selector: '.smartphone'
+            }
+        ]
     },
-    allowedMediaQuries: ['(--smartphone)'],
-    translateMediaQuries: [
-      {
-        query: '(--smartphone)',
-        selector: '.smartphone'
-      }
-    ]
-  },
-  tablet: {
-    selectors: {
-      convert: ['.desktop', '.tablet'],
-      remove: ['.smartphone', ':hover', '.critical']
-    },
-    allowedMediaQuries: ['(--desktop)', '(--tablet)'],
-    translateMediaQuries: [
-      {
-        query: '(--desktop)',
-        selector: '.tablet'
-      },
-      {
-        query: '(--tablet)',
-        selector: '.tablet'
-      }
-    ]
-  }
+    tablet: {
+        bannedMediaQuries: ['(--smartphone)'],
+        selectors: {
+            convert: ['.desktop', '.tablet'],
+            remove: ['.smartphone', ':hover', '.critical']
+        },
+        translateMediaQuries: [
+            {
+                query: '(--desktop)',
+                selector: '.tablet'
+            },
+            {
+                query: '(--tablet)',
+                selector: '.tablet'
+            }
+        ]
+    }
 };
-
 /**
  * matchValueInObject
  */
-function matchValueInObjectArray(arr, matchValue) {
-  let valueMatched;
-  for (let i = arr.length; i--; ) {
-    let obj = arr[i];
-    for (let key in obj) {
-      if (obj[key] === matchValue) {
-        valueMatched = obj;
-      }
+var matchValueInObjectArray = function (arr, matchValue) {
+    var valueMatched;
+    for (var i = arr.length; i--;) {
+        var obj = arr[i];
+        for (var key in obj) {
+            if (obj[key] === matchValue) {
+                valueMatched = obj;
+            }
+        }
     }
-  }
-  return valueMatched;
-}
-
+    return valueMatched;
+};
 /**
  * createSubset
  */
-function createSubset(selectorsInFile, regex) {
-  let cleanselector = [];
-  let selectorsInFileArr = selectorsInFile.split(',');
-  for (let i = 0; i < selectorsInFileArr.length; i++) {
-    let selector = selectorsInFileArr[i].replace(/\n|\r/gi, '');
-    let result = regex.exec(selector);
-    let pushvalue = '';
-    if (result !== null) {
-      let checkresult =
-        selector.indexOf(result[0] + ' ') !== -1 || selector === result[0];
-      if (checkresult) {
-        pushvalue = selector;
-      }
+var createSubset = function (selectorsInFile, regex) {
+    var cleanselector = [];
+    var selectorsInFileArr = selectorsInFile.split(',');
+    for (var i = 0; i < selectorsInFileArr.length; i++) {
+        var selector = selectorsInFileArr[i].replace(/\n|\r/gi, '');
+        var result = regex.exec(selector);
+        var pushvalue = '';
+        if (result !== null) {
+            var checkresult = selector.indexOf(result[0] + ' ') !== -1 || selector === result[0];
+            if (checkresult) {
+                pushvalue = selector;
+            }
+        }
+        if (pushvalue !== '') {
+            cleanselector.push(pushvalue);
+        }
     }
-    if (pushvalue !== '') {
-      cleanselector.push(pushvalue);
-    }
-  }
-  return cleanselector.join(',');
-}
-
+    return cleanselector.join(',');
+};
 /**
  * convertSelector
  */
-function convertSelector(selectorsInFile, regex) {
-  let cleanselector = [];
-  let selectorsInFileArr = selectorsInFile.split(',');
-  for (let i = 0; i < selectorsInFileArr.length; i++) {
-    let selector = selectorsInFileArr[i];
-    let result = regex.exec(selector);
-    if (result !== null) {
-      selector = selector.replace(result[0], '').trim();
+var convertSelector = function (selectorsInFile, regex) {
+    var cleanselector = [];
+    var selectorsInFileArr = selectorsInFile.split(',');
+    for (var i = 0; i < selectorsInFileArr.length; i++) {
+        var selector = selectorsInFileArr[i];
+        var result = regex.exec(selector);
+        if (result !== null) {
+            selector = selector.replace(result[0], '').trim();
+        }
+        cleanselector.push(selector);
     }
-    cleanselector.push(selector);
-  }
-  return cleanselector.join(',');
-}
-
+    return cleanselector.join(',');
+};
 /**
  * removeSelector
  */
-function removeSelector(selectorsInFile, regex) {
-  let cleanselector = [];
-  let selectorsInFileArr = selectorsInFile.split(',');
-  for (let i = 0; i < selectorsInFileArr.length; i++) {
-    let selector = selectorsInFileArr[i];
-    let result = regex.exec(selector);
-    if (result === null) {
-      cleanselector.push(selector);
-    }
-  }
-  return cleanselector.join(',');
-}
-
-module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(
-  options
-) {
-  return function(css) {
-    options = options || {};
-    options.allowedMediaQuries = options.allowedMediaQuries || [];
-    options.translateMediaQuries = options.translateMediaQuries || [];
-    options.selectors = options.selectors || {};
-    options.log = true;
-    if (options.cleanser !== undefined) {
-      options = defaults[options.cleanser];
-    }
-
-    if (
-      options.allowedMediaQuries.length !== 0 ||
-      options.translateMediaQuries.length !== 0
-    ) {
-      css.walkAtRules('media', function(atrule) {
-        if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
-          atrule.remove();
+var removeSelector = function (selectorsInFile, regex) {
+    var cleanselector = [];
+    var selectorsInFileArr = selectorsInFile.split(',');
+    for (var i = 0; i < selectorsInFileArr.length; i++) {
+        var selector = selectorsInFileArr[i];
+        var result = regex.exec(selector);
+        if (result === null) {
+            cleanselector.push(selector);
         }
-
-        let returnedObject = matchValueInObjectArray(
-          options.translateMediaQuries,
-          atrule.params
-        );
-        if (returnedObject !== undefined) {
-          atrule.walkRules(function(rule) {
-            rule.selector = `${returnedObject.selector} ${rule.selector}`;
-            rule.remove();
-            css.insertBefore(atrule, rule);
-          });
-          atrule.remove();
-        }
-      });
     }
-
-    if (options.selectors !== undefined) {
-      if (options.selectors.only !== undefined) {
-        let selectorsToKeep = options.selectors.only;
-        let onlyRegexString = selectorsToKeep.join('|\\') + '|\\:root';
-        let onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')');
-        let onlyRegex = new RegExp('\\' + onlyRegexString);
-        css.walkRules(onlyRegexWalk, function(rule) {
-          if (rule.parent.name === undefined) {
-            let newSelector = createSubset(rule.selector, onlyRegex);
-            if (newSelector !== '') {
-              rule.selector = newSelector;
-            } else {
-              rule.remove();
+    return cleanselector.join(',');
+};
+module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options) {
+    return function (css) {
+        options = options || {};
+        options.allowedMediaQuries = options.allowedMediaQuries || [];
+        options.bannedMediaQuries = options.bannedMediaQuries || [];
+        options.translateMediaQuries = options.translateMediaQuries || [];
+        options.selectors = options.selectors || {};
+        options.log = true;
+        if (options.cleanser) {
+            options = defaults[options.cleanser];
+        }
+        if (options.allowedMediaQuries.length !== 0 || options.translateMediaQuries.length !== 0) {
+            css.walkAtRules('media', function (atrule) {
+                if (options.bannedMediaQuries.indexOf(atrule.params) !== -1) {
+                    atrule.remove();
+                }
+                if (options.allowedMediaQuries.indexOf(atrule.params) === -1) {
+                    atrule.remove();
+                }
+                var returnedObject = matchValueInObjectArray(options.translateMediaQuries, atrule.params);
+                if (returnedObject) {
+                    atrule.walkRules(function (rule) {
+                        rule.selector = returnedObject.selector + " " + rule.selector;
+                        rule.remove();
+                        css.insertBefore(atrule, rule);
+                    });
+                    atrule.remove();
+                }
+            });
+        }
+        if (options.selectors) {
+            if (options.selectors.only) {
+                var selectorsToKeep = options.selectors.only;
+                var onlyRegexString = selectorsToKeep.join('|\\') + '|\\:root';
+                var onlyRegexWalk = new RegExp('^(?!\\' + onlyRegexString + ')');
+                var onlyRegex_1 = new RegExp('\\' + onlyRegexString);
+                css.walkRules(onlyRegexWalk, function (rule) {
+                    if (!rule.parent.name) {
+                        var newSelector = createSubset(rule.selector, onlyRegex_1);
+                        if (newSelector !== '') {
+                            rule.selector = newSelector;
+                        }
+                        else {
+                            rule.remove();
+                        }
+                    }
+                });
             }
-          }
-        });
-      }
-      if (options.selectors.convert !== undefined) {
-        let selectorsToConvert = options.selectors.convert;
-        let convertRegexString = selectorsToConvert.join('|\\');
-        let convertRegex = new RegExp('\\' + convertRegexString);
-        css.walkRules(convertRegex, function(rule) {
-          rule.selector = convertSelector(rule.selector, convertRegex);
-          let newSelector = convertSelector(rule.selector, convertRegex);
-          if (newSelector !== '') {
-            rule.selector = newSelector;
-          } else {
-            rule.remove();
-          }
-        });
-      }
-      if (options.selectors.remove !== undefined) {
-        let selectorsToRemove = options.selectors.remove;
-        let removeRegexString = selectorsToRemove.join('|\\');
-        let removeRegex = new RegExp('\\' + removeRegexString);
-        css.walkRules(removeRegex, function(rule) {
-          let newSelector = removeSelector(rule.selector, removeRegex);
-          if (newSelector !== '') {
-            rule.selector = newSelector;
-          } else {
-            rule.remove();
-          }
-        });
-      }
-    }
-
-    if (options.removeComments === true) {
-      css.walkComments(function(comment) {
-        comment.remove();
-      });
-    }
-  };
+            if (options.selectors.convert) {
+                var selectorsToConvert = options.selectors.convert;
+                var convertRegexString = selectorsToConvert.join('|\\');
+                var convertRegex_1 = new RegExp('\\' + convertRegexString);
+                css.walkRules(convertRegex_1, function (rule) {
+                    rule.selector = convertSelector(rule.selector, convertRegex_1);
+                    var newSelector = convertSelector(rule.selector, convertRegex_1);
+                    if (newSelector !== '') {
+                        rule.selector = newSelector;
+                    }
+                    else {
+                        rule.remove();
+                    }
+                });
+            }
+            if (options.selectors.remove) {
+                var selectorsToRemove = options.selectors.remove;
+                var removeRegexString = selectorsToRemove.join('|\\');
+                var removeRegex_1 = new RegExp('\\' + removeRegexString);
+                css.walkRules(removeRegex_1, function (rule) {
+                    var newSelector = removeSelector(rule.selector, removeRegex_1);
+                    if (newSelector !== '') {
+                        rule.selector = newSelector;
+                    }
+                    else {
+                        rule.remove();
+                    }
+                });
+            }
+        }
+        if (options.removeComments === true) {
+            css.walkComments(function (comment) {
+                comment.remove();
+            });
+        }
+    };
 });
