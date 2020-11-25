@@ -145,8 +145,7 @@ const removeSelector = (selectorsInFile: string, regex: RegExp) => {
   }
   return cleanselector.join(',');
 };
-
-module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(options: ISelectorCleanseOptions) {
+function selectorcleanse(options: ISelectorCleanseOptions) {
   return css => {
     options = options || {};
     options.allowedMediaQuries = options.allowedMediaQuries;
@@ -238,4 +237,8 @@ module.exports = postcss.plugin('selectorcleanse', function selectorcleanse(opti
       });
     }
   };
-});
+}
+
+exports.default = postcss.plugin('selectorcleanse', selectorcleanse);
+
+module.exports = exports['default'];

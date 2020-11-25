@@ -4,7 +4,7 @@ const { readFileSync } = require('fs');
 const { exec } = require('child_process');
 
 const postcss = require('postcss');
-const plugin = require('./');
+const plugin = require('./index.js');
 const configFunc = require('./testing/config/config.js');
 console.log('configFunc', configFunc);
 const run = (input, output, opts) => {
