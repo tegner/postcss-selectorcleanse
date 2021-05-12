@@ -20,7 +20,7 @@
   "author": "tegner",
   "license": "ISC",
   "dependencies": {
-    "postcss": "^7.0.18"
+    "postcss": "^8.2.10"
   },
   "devDependencies": {
     "jest": "^24.9.0",
